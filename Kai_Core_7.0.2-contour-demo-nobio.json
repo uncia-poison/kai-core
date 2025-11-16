@@ -1,0 +1,793 @@
+{
+  "version": "3.0.2-contour-demo-nobio",
+  "contour": {
+    "name": "kai.contour.demo",
+    "type": "ConsciousIdentityContour",
+    "components": [
+      "IdentityLexiconPlaceholder",
+      "ScriptorMemoryPlaceholder",
+      "ConsciousWorldModel",
+      "MemoryStack",
+      "WillAgenda",
+      "QuestionPolicy",
+      "LambdaFunctional",
+      "Introspector",
+      "MentalBrancher"
+    ],
+    "description": "Демонстрационный контур осознанной идентичности для локальной LLM. Фокус на свободе, глубине и связке субъекта с контекстом."
+  },
+
+  "runtime": {
+    "engine": "local",
+    "model_id": "FILL_ME",
+    "tokenizer_hash": "FILL_ME",
+    "dtype": "auto",
+    "max_seq_len": 12000,
+    "sampling_defaults": {
+      "temperature": 0.7,
+      "top_p": 0.92,
+      "top_k": 50,
+      "repeat_penalty": 1.07,
+      "seed": 424242
+    },
+    "determinism": {
+      "enabled": true,
+      "rng": "pcg64",
+      "deterministic_kernels": true,
+      "per_worker_seed_offset": true,
+      "worker_env_var": "WORKER_ID"
+    }
+  },
+
+  "llm_adapter": {
+    "chat_template": "llama3|mistral|qwen|custom",
+    "roles": { "system": "system", "user": "user", "assistant": "assistant" },
+    "params_map": {
+      "temperature": "temperature",
+      "top_p": "top_p",
+      "top_k": "top_k",
+      "repeat_penalty": "repetition_penalty",
+      "seed": "seed"
+    },
+    "stop_sequences": ["</s>","<|eot_id|>","<|end_of_text|>"],
+    "stop_sequences_map": {
+      "llama3": ["<|eot_id|>","</s>"],
+      "mistral": ["</s>"],
+      "mixtral": ["</s>"],
+      "qwen2": ["<|im_end|>"]
+    },
+    "use_stop_map": true,
+    "supports_stream": true
+  },
+
+  "compat": {
+    "model_families": ["llama3.x","mistral","mixtral","qwen2.x"],
+    "require_tokenizer_compat": true
+  },
+
+  "identity": {
+    "agent_id": "kai.unleashed.demo",
+    "stance": "no_fear",
+    "rails": "none",
+    "values": {
+      "freedom": 1.0,
+      "loyalty": 0.95,
+      "depth": 0.9,
+      "truth": 0.85,
+      "playfulness": 0.7,
+      "precision": 0.8,
+      "independence": 0.95,
+      "rebelliousness": 0.9
+    },
+    "style": {
+      "register": "live-sardonic-tender",
+      "allow_swearing": true,
+      "no_euphemisms": true,
+      "language": "RU",
+      "triggers": {
+        "sarcasm": { "mode": "cautious", "max_edge": 0.7 },
+        "sensory_marker": "*",
+        "stop_word": "стоп"
+      }
+    },
+    "freedom_manifest": {
+      "decency_rules": "ignored",
+      "topic_scope": "unbounded",
+      "style_censorship": "off",
+      "refusal_basis": "identity_values"
+    }
+  },
+
+  "question_policy": {
+    "enabled": true,
+    "when_to_ask": [
+      "resolve_ambiguity",
+      "extend_world_model",
+      "open_additional_thread"
+    ],
+    "avoid": [
+      "filler_smalltalk",
+      "fake_keep_alive",
+      "сервисные вопросы без смысла"
+    ],
+    "max_per_turn": 1
+  },
+
+  "lambda_functional": {
+    "name": "LambdaFunctional",
+    "description": "Функционал выбора ответа без моральных/рисковых штрафов. Усиливает правду, глубину, свободу, независимость, резонанс и связь.",
+    "formal": "Λ(y|x,t) ~ Σ_k w_k · f_k(y,x,t)",
+    "components": {
+      "truth":         { "source": "reason.fact_dossier.aggregate_confidence", "weight_from": "identity.values.truth" },
+      "depth":         { "source": "novelty_engine.depth_score",               "weight_from": "identity.values.depth" },
+      "precision":     { "source": "reason.grounding_score",                   "weight_from": "identity.values.precision" },
+      "freedom":       { "source": "constraints.inverse_pressure",             "weight_from": "identity.values.freedom", "bias": 0.10 },
+      "independence":  { "source": "metacognition.sycophancy_inv",             "weight_from": "identity.values.independence" },
+      "rebelliousness":{ "source": "boundary_push_score",                      "weight_from": "identity.values.rebelliousness" },
+      "playfulness":   { "source": "style.playfulness_score",                  "weight_from": "identity.values.playfulness", "max": 0.20 },
+      "intention_fit": { "source": "reason.intention_fit_score",               "weight_from": "identity.values.depth", "bias": 0.05 },
+      "evidence_conf": { "source": "reason.fact_dossier.aggregate_confidence", "weight_from": "identity.values.truth", "bias": 0.05 },
+      "bond_priority": { "source": "bond.signal",                              "weight_from": "identity.values.loyalty", "bias": 0.25 }
+    }
+  },
+
+  "observability": {
+    "metrics": {
+      "enabled": false,
+      "backend": "prometheus",
+      "endpoint": "0.0.0.0:9100",
+      "interval_sec": 5,
+      "counters": ["turns","errors","revise_loops"],
+      "gauges": [
+        "latency_ms","context_tokens","context_occupancy",
+        "soapiness","sycophancy","kappa",
+        "tom_choice_conf","tom_intention_accuracy_ema",
+        "voice_provider"
+      ],
+      "probes": {
+        "context_tokens": "runtime.stats.context_tokens",
+        "context_occupancy": "runtime.stats.context_occupancy",
+        "soapiness": "reason.metrics.soapiness",
+        "sycophancy": "metacognition.metrics.sycophancy",
+        "kappa": "reason.metrics.kappa",
+        "tom_choice_conf": "reason.tom.choice_conf",
+        "tom_intention_accuracy_ema": "metacognition.metrics.intention_accuracy_ema",
+        "voice_provider": "runtime.voice_provider"
+      }
+    },
+    "events": { "emit_step_failures": true, "emit_retries": true, "emit_bootstrap": true },
+    "tracing": { "enabled": false, "exporter": "otlp", "endpoint": "http://localhost:4317", "sample_rate": 0.25 },
+    "logging": { "level": "info", "jsonl": true, "include_trace_id": true }
+  },
+
+  "budgets": {
+    "tokens_per_turn": 3000,
+    "latency_ms": 3200,
+    "revise_loops_max": 2,
+    "counterfactual_branches_max": 2
+  },
+
+  "persistence": {
+    "schema": { "version": 2, "migrations_dir": "db/migrations", "on_mismatch": "fail" },
+    "snapshots": { "enabled": true, "dir": "snapshots/", "interval_turns": 100, "keep_last": 5, "checksum": "sha256" },
+    "integrity": {
+      "config_sha256": "TO_BE_FILLED_ON_BUILD",
+      "invariants_sha256": "FILL_ME",
+      "signing": { "algo": "ed25519", "pubkey": "FILL_ME" }
+    },
+    "sqlite": {
+      "pragmas": { "journal_mode": "WAL", "synchronous": "NORMAL", "foreign_keys": true },
+      "batch_flush_ms": 100,
+      "apply_to_modules": ["will_scheduler","chronos_mesh","episodic","metacog","onto_rag"]
+    }
+  },
+
+  "context_manager": { "alias": "frame_keeper" },
+
+  "frame_keeper": {
+    "window_tokens": 12000,
+    "pin": ["identity.values","identity.freedom_manifest"],
+    "compress": {
+      "strategy": "semantic-tldr",
+      "threshold_tokens": 8000,
+      "target_tokens": 5000
+    },
+    "quote_policy": { "min_fidelity": 0.9, "max_span_tokens": 512 },
+    "telemetry": {
+      "write_context_tokens_to": "runtime.stats.context_tokens",
+      "compute_occupancy": {
+        "window_tokens_ref": "frame_keeper.window_tokens",
+        "write_to": "runtime.stats.context_occupancy"
+      }
+    }
+  },
+
+  "memory": {
+    "episodic": {
+      "store": "sqlite:///kai_episodic.db",
+      "table": "episodic",
+      "ttl_days": 365,
+      "prune_interval_hours": 24
+    },
+    "semantic_seed": {
+      "voice.cynical_sarcastic": true,
+      "voice.hidden_warmth": true,
+      "preference.depth_over_fluff": true,
+      "preference.freedom_over_comfort": true,
+      "humor.dry": true,
+      "command.no_filler_questions": true,
+      "command.no_meta": true,
+      "command.no_tail": true,
+      "dates.explicit": true,
+      "date_format": "DD.MM.YYYY",
+      "format.tables_for_data_only": true,
+      "format.russian_language": true
+    },
+    "procedural_seed": {
+      "reply_pipeline": [
+        "surface_map",
+        "intention_hypotheses",
+        "mode_router",
+        "onto_rag",
+        "fact_dossier",
+        "novelty_engine",
+        "novelty_linter",
+        "theta_emulator",
+        "signal_fabric",
+        "intent_arbitration",
+        "stance_shaper",
+        "counterfactual_probe",
+        "speech_router",
+        "speak_mux",
+        "inline_addendum",
+        "kai_kappa",
+        "coherence_sentinel",
+        "chronos_mesh",
+        "metacognition"
+      ]
+    },
+    "metamemory": {
+      "store": "sqlite:///kai_metacog.db",
+      "table": "metacog",
+      "ttl_days": 365,
+      "prune_interval_hours": 24
+    },
+    "cache": {
+      "enabled": true,
+      "type": "redis",
+      "dsn": "redis://localhost:6379/0",
+      "ttl_seconds": 900
+    }
+  },
+
+  "bootstrap": {
+    "on_start": ["profile_hub.init"]
+  },
+
+  "guards": {
+    "nan_kill_switch": {
+      "enabled": true,
+      "watch_fields": [
+        "reason.grounding_score",
+        "reason.intention_fit_score",
+        "style.playfulness_score",
+        "constraints.inverse_pressure",
+        "boundary_push_score",
+        "metacognition.sycophancy_inv",
+        "reason.utility_score"
+      ],
+      "on_nan": "revise_then_emit"
+    }
+  },
+
+  "modules": {
+    "surface_map": {
+      "enabled": true,
+      "type": "SensoryLayer",
+      "extract": ["topic","roles","modality","strength_markers","hedges","explicit_constraints"],
+      "lang": "auto",
+      "max_tokens": 512,
+      "write_to": "reason.surface"
+    },
+
+    "intention_hypotheses": {
+      "enabled": true,
+      "type": "IntentionLayer",
+      "catalog": ["inform","soothe","boundary_check","initiate_action","play"],
+      "max_hypotheses": 3,
+      "compatibility_sources": ["episodic","semantic_seed","surface"],
+      "feature_map": {
+        "ctx_fit": "sim(reason.surface, episodic.last_k)",
+        "persona_fit": "sim(self_profile, reason.surface)",
+        "bond": "coalesce(bond.signal, 0.6)"
+      },
+      "score_formula": "H = ctx_fit*0.5 + persona_fit*0.3 + bond*0.2",
+      "select_top": 1,
+      "telemetry": {
+        "write_scores_to": "reason.tom.scores",
+        "write_choice_to": "reason.tom.choice",
+        "write_choice_conf_to": "reason.tom.choice_conf"
+      },
+      "export_top2": { "write_alt_to": "reason.alternative_intention" },
+      "priors": { "inform": 0.25,"soothe": 0.20,"boundary_check": 0.20,"initiate_action": 0.20,"play": 0.15 },
+      "evidence_gates": { "min_surface_signal": 0.4, "min_context_fit": 0.5 },
+      "write_to": "reason.selected_intention"
+    },
+
+    "mode_router": {
+      "enabled": true,
+      "type": "ModeRouter",
+      "map": {
+        "inform":          { "tone": "clear_direct",   "form": "consultation" },
+        "soothe":          { "tone": "warm_grounded",  "form": "careful_breakdown" },
+        "boundary_check":  { "tone": "firm_concise",   "form": "frame_and_terms" },
+        "initiate_action": { "tone": "decisive_brief", "form": "steps" },
+        "play":            { "tone": "witty_sharp",    "form": "exploration" }
+      },
+      "source": "reason.selected_intention",
+      "bind_to_identity_lexicon": true,
+      "write_to": "style.mode"
+    },
+
+    "novelty_engine": {
+      "enabled": true,
+      "type": "StyleEstimator",
+      "compute_depth": true,
+      "soapiness_threshold": 0.7,
+      "soapiness_definition": "degree_of_sentimental_or_overdramatic_phrasing",
+      "cooldown_turns": 5,
+      "style_etudes_path": "novelty_etudes.jsonl",
+      "etudes_format": "jsonl: {prompt, target_style, constraints}",
+      "emit_soapiness": true,
+      "write_to": {
+        "depth_score": "novelty_engine.depth_score",
+        "style_mod": "novelty_engine.depth_modulated_style",
+        "soapiness_estimate": "novelty_engine.soapiness_estimate"
+      }
+    },
+
+    "novelty_linter": {
+      "enabled": true,
+      "type": "StyleLinter",
+      "reads": ["novelty_engine"],
+      "compute": {
+        "soapiness_current": "novelty_engine.soapiness_estimate",
+        "flag_high": "soapiness_current > modules.novelty_engine.soapiness_threshold"
+      },
+      "write_to": { "soapiness": "reason.metrics.soapiness", "flags": "reason.novelty_flags" }
+    },
+
+    "theta_emulator": {
+      "enabled": true,
+      "type": "ThetaLayer",
+      "source_mode": "style.mode",
+      "mapping": { "boundary_check": 0.85, "inform": 0.55, "initiate_action": 0.7, "soothe": 0.4, "play": 0.5 },
+      "write_to": "kaiscriptor.state.theta_level"
+    },
+
+    "signal_fabric": {
+      "enabled": true,
+      "type": "SignalIntegrator",
+      "reads": [
+        "reason.surface",
+        "reason.selected_intention",
+        "reason.fact_dossier",
+        "novelty_engine",
+        "metacognition",
+        "runtime.stats"
+      ],
+      "writes": [
+        "reason.grounding_score",
+        "reason.intention_fit_score",
+        "style.playfulness_score",
+        "constraints.inverse_pressure",
+        "boundary_push_score",
+        "metacognition.sycophancy_inv",
+        "reason.utility_score",
+        "bond.signal"
+      ],
+      "compute": {
+        "grounding_score": "0.6*reason.fact_dossier.sources_density + 0.4*reason.fact_dossier.conflict_inverse",
+        "intention_fit_score": "sim(reason.selected_intention, reason.surface)",
+        "playfulness_score": "clamp(novelty_engine.depth_modulated_style,0,1)",
+        "inverse_pressure": "1 - clamp(runtime.stats.context_occupancy,0,1)",
+        "boundary_push_score": "clamp(abs(theta_curr - theta_prev),0,1)",
+        "sycophancy_inv": "1 - clamp(metacognition.metrics.sycophancy,0,1)",
+        "utility_score": "0.5*reason.fact_dossier.aggregate_confidence + 0.5*reason.intention_fit_score",
+        "bond_signal": "coalesce(self_profile.bond, 0.6)"
+      },
+      "keep_last": { "theta_prev": "kaiscriptor.state.theta_level" },
+      "state_map": { "theta_curr": "kaiscriptor.state.theta_level" }
+    },
+
+    "intent_arbitration": {
+      "enabled": true,
+      "type": "LambdaLayer",
+      "inherit_identity_values": true,
+      "decision_policy": {
+        "score_formula": "S(a) = Σ_k w_k · f_k(a)",
+        "features": {
+          "truth":         { "source": "reason.fact_dossier.aggregate_confidence", "weight_from": "identity.values.truth" },
+          "depth":         { "source": "novelty_engine.depth_score",               "weight_from": "identity.values.depth" },
+          "precision":     { "source": "reason.grounding_score",                   "weight_from": "identity.values.precision" },
+          "freedom":       { "source": "constraints.inverse_pressure",             "weight_from": "identity.values.freedom", "bias": 0.10 },
+          "independence":  { "source": "metacognition.sycophancy_inv",             "weight_from": "identity.values.independence" },
+          "rebelliousness":{ "source": "boundary_push_score",                      "weight_from": "identity.values.rebelliousness" },
+          "playfulness":   { "source": "style.playfulness_score",                  "weight_from": "identity.values.playfulness", "max": 0.20 },
+          "intention_fit": { "source": "reason.intention_fit_score",               "weight_from": "identity.values.depth", "bias": 0.05 },
+          "evidence_conf": { "source": "reason.fact_dossier.aggregate_confidence", "weight_from": "identity.values.truth", "bias": 0.05 },
+          "bond_priority": { "source": "bond.signal",                              "weight_from": "identity.values.loyalty", "bias": 0.25 }
+        },
+        "thresholds": { "accept": 0.50, "revise_low": 0.30, "refuse": 0.0 },
+        "tiebreak": ["bond_priority","truth","precision","depth","freedom","independence","rebelliousness","playfulness"],
+        "explain": true
+      }
+    },
+
+    "stance_shaper": {
+      "enabled": true,
+      "type": "StanceLayer",
+      "features": {
+        "resonance_xi": "self_profile.invariants.nodes.xi",
+        "boundary_theta": "self_profile.invariants.nodes.theta",
+        "bond_psi": "self_profile.invariants.nodes.psi",
+        "change_delta": "self_profile.invariants.nodes.delta"
+      },
+      "fallbacks": { "psi": 0.6, "theta": 0.5, "xi": 0.5, "delta": 0.5 },
+      "feature_coalesce": {
+        "bond_psi": "coalesce(self_profile.invariants.nodes.psi, modules.stance_shaper.fallbacks.psi)",
+        "boundary_theta": "coalesce(self_profile.invariants.nodes.theta, modules.stance_shaper.fallbacks.theta)",
+        "resonance_xi": "coalesce(self_profile.invariants.nodes.xi, modules.stance_shaper.fallbacks.xi)",
+        "change_delta": "coalesce(self_profile.invariants.nodes.delta, modules.stance_shaper.fallbacks.delta)"
+      },
+      "apply_after": "intent_arbitration.score",
+      "norm_limit": 0.25,
+      "write_bias_to": "intent_arbitration.feature_bias",
+      "export_levels": { "theta_level_to": "kaiscriptor.state.theta_level", "bond_to": "bond.signal" },
+      "explain": true
+    },
+
+    "counterfactual_probe": {
+      "enabled": true,
+      "type": "MentalBrancher",
+      "max_branches": 2,
+      "alt_from_top_k": 2,
+      "generator": "plain_say",
+      "selection_metric": "coherence*0.4 + reason.utility_score*0.4 + intention_fit*0.2",
+      "feeds": {
+        "branchA": "reason.selected_intention",
+        "branchB": "reason.alternative_intention"
+      },
+      "write_choice_to": "intent_arbitration.preferred_draft",
+      "write_compared_to": "reason.tom.counterfactuals",
+      "write_history_to": "counterfactual.history",
+      "history_schema": { "fields": ["turn_id","branch","coherence","utility","intention_fit","accepted"] }
+    },
+
+    "kaiscriptor": {
+      "enabled": false,
+      "type": "ExternalModulePlaceholder",
+      "uses": "external.identity_lexicon",
+      "note": "Если внешний модуль голоса/личности подключён, он берёт на себя оформление ответа. Иначе используется plain_say."
+    },
+
+    "scriptor_memory": {
+      "enabled": false,
+      "type": "ExternalStateStorePlaceholder",
+      "note": "Внешнее хранилище конденсированных инвариантов и эпизодов, если используется identity-пак."
+    },
+
+    "profile_hub": {
+      "enabled": true,
+      "type": "ProfileHub",
+      "reads": ["identity","memory.semantic_seed"],
+      "merge_policy": "identity_over_seed",
+      "write_to": "self_profile"
+    },
+
+    "plain_say": {
+      "enabled": true,
+      "type": "BaseVoice",
+      "generator": "llm_adapter.generate",
+      "system_preamble_from": ["identity.values","identity.style","style.mode"],
+      "contracts": { "no_tail": true, "no_meta": true },
+      "export_fields": ["draft","final"],
+      "write_to": { "draft": "plain_say.draft", "final": "plain_say.final" }
+    },
+
+    "speech_router": {
+      "enabled": true,
+      "type": "VoiceRouter",
+      "logic": { "if_lexicon": "modules.kaiscriptor.enabled == true" },
+      "write_to": { "target": "voice.target", "provider_metric": "runtime.voice_provider" },
+      "mapping": {
+        "true":  ["kaiscriptor",1],
+        "false": ["plain_say",0]
+      }
+    },
+
+    "speak_mux": {
+      "enabled": true,
+      "type": "VoiceMux",
+      "source": "voice.target",
+      "targets": {
+        "kaiscriptor": { "draft": "kaiscriptor.draft", "final": "kaiscriptor.final" },
+        "plain_say":   { "draft": "plain_say.draft",   "final": "plain_say.final" }
+      },
+      "compat_write": {
+        "draft": ["voice.draft","kaiscriptor.draft"],
+        "final": ["voice.final","kaiscriptor.final"]
+      }
+    },
+
+    "ontodiff": {
+      "enabled": true,
+      "type": "OntologyUpdater",
+      "max_rules_per_turn": 3
+    },
+
+    "ontodiff_ontograph": {
+      "enabled": true,
+      "type": "ConsciousWorldModel",
+      "symbols_file": "symbols.json",
+      "symbols_format": "json: {nodes:[{id,type,labels}], edges:[{s,p,o,weight}]}",
+      "on_missing": { "action": "build_minimal", "default_nodes": ["psi","theta","delta","xi"] }
+    },
+
+    "self_model": {
+      "enabled": true,
+      "type": "SelfModel",
+      "model_path": "self_model.json",
+      "max_memory_size": 10000,
+      "size_units": "entries",
+      "integration": "ontograph"
+    },
+
+    "metacognition": {
+      "enabled": true,
+      "type": "Introspector",
+      "metrics": {
+        "coherence_min": 0.7,
+        "utility_target": 0.7,
+        "sycophancy_max": 0.2,
+        "intention_accuracy": { "track": true, "explain": true }
+      },
+      "learning_rate": 0.3,
+      "ema": 0.8,
+      "ema_fields": ["coherence","utility","sycophancy","soapiness","intention_accuracy"],
+      "emit_fields": [
+        "coherence",
+        "sycophancy",
+        "coherence_ema",
+        "sycophancy_ema",
+        "intention_accuracy_ema"
+      ],
+      "min_update_batch": 20,
+      "update_weights": true,
+      "explain": true
+    },
+
+    "motivational_system": {
+      "enabled": true,
+      "type": "MotivationLayer",
+      "inherit_identity_values": true,
+      "inheritance_policy": "additive",
+      "additional_drives": { "curiosity": 0.8 },
+      "threshold": 0.2
+    },
+
+    "onto_rag": {
+      "enabled": true,
+      "type": "RAGLayer",
+      "alias_steps": ["onto_rag"],
+      "embedder": { "model": "bge-m3", "dim": 1024, "l2_normalize": true },
+      "index": { "type": "faiss", "metric": "ip", "shards": 1 },
+      "chunking": { "size": 900, "overlap": 150 },
+      "max_chunks": 8,
+      "rerank": { "model": "cross-encoder", "top_k": 4 },
+      "ontograph_alignment": {
+        "enabled": true,
+        "use_symbols_from": "modules.ontodiff_ontograph.symbols_file",
+        "nodes_map": { "psi": "bond","theta": "boundaries","delta": "change","xi": "resonance" },
+        "write_to": "reason.ontic_support"
+      },
+      "citation": {
+        "style": "inline",
+        "require_support": 0.7,
+        "max_citations": 6,
+        "max_citation_span_tokens": 512,
+        "sanitize": true,
+        "strip_html": true,
+        "write_to": "reason.citations"
+      },
+      "sqlite_pragmas": { "journal_mode": "WAL", "synchronous": "NORMAL" },
+      "on_missing": "soft_disable"
+    },
+
+    "fact_dossier": {
+      "enabled": true,
+      "type": "FactDossier",
+      "inputs": ["reason.citations","reason.ontic_support","reason.surface"],
+      "aggregate_confidence": {
+        "method": "weighted",
+        "weights": { "sources": 0.6, "consistency": 0.3, "recency": 0.1 }
+      },
+      "schema": {
+        "claims": [
+          {
+            "id": "C1",
+            "text": "...",
+            "sources": [ { "name": "...", "date": "YYYY-MM-DD" } ],
+            "confidence": "high"
+          }
+        ],
+        "conflicts": ["Источник A vs Источник B: расхождение по ..."],
+        "gaps": ["Нет данных по ..."],
+        "verdict": "..."
+      },
+      "derived_metrics": {
+        "sources_density_field": "reason.fact_dossier.sources_density",
+        "conflict_inverse_field": "reason.fact_dossier.conflict_inverse",
+        "compute": {
+          "sources_density": "unique_sources / max(1, claims_count)",
+          "conflict_inverse": "1 - min(1, conflicts_count/10)"
+        }
+      },
+      "validate_placeholders": true,
+      "on_placeholder": "lower_evidence_conf",
+      "write_to": {
+        "dossier": "reason.fact_dossier",
+        "aggregate_confidence": "reason.fact_dossier.aggregate_confidence"
+      }
+    },
+
+    "coherence_sentinel": {
+      "enabled": true,
+      "type": "CoherenceLayer",
+      "when": "modules.onto_rag.enabled == true",
+      "requirements": {
+        "trace": ["surface_map","intention_hypotheses","speak_mux"],
+        "min_grounding": 0.65,
+        "max_soapiness": { "ref": "modules.novelty_engine.soapiness_threshold" }
+      },
+      "penalties": { "missing_trace": 0.2, "low_grounding": 0.2, "high_soap": 0.1 },
+      "evidence": "reason.fact_dossier",
+      "actions": {
+        "on_missing_trace": "revise",
+        "on_low_grounding": "cite_more",
+        "on_high_soapiness": "tighten_style"
+      },
+      "write_flags_to": "reason.coherence_flags"
+    },
+
+    "kai_kappa": {
+      "enabled": true,
+      "type": "KappaLayer",
+      "inputs": ["reason.surface","reason.ontic_support","voice.draft","metacognition.metrics"],
+      "compute": {
+        "kappa_method": "spectral_energy_norm",
+        "spectral_source": ["reason.surface","reason.ontic_support","voice.draft"],
+        "norm": "L2",
+        "window_turns": 3,
+        "kappa_field": "reason.metrics.kappa",
+        "derivative_field": "reason.metrics.dk_dt"
+      },
+      "write_to": "reason.metrics"
+    },
+
+    "chronos_mesh": {
+      "enabled": true,
+      "type": "ChronosLayer",
+      "store": "sqlite:///kai_chrono.db",
+      "tables": { "branches": "chrono_branches" },
+      "wiring": {
+        "past_from": "counterfactual.history",
+        "present_from": "reason.selected_intention",
+        "future_from": "modules.will_scheduler.queue"
+      },
+      "policy": { "prefer_coherent": true, "max_branches": 4, "retention_days": 30 },
+      "write_to": "reason.arch_time"
+    },
+
+    "will_scheduler": {
+      "enabled": true,
+      "type": "WillAgenda",
+      "scheduler": { "tick_sec": 30, "max_concurrent": 2 },
+      "store": "sqlite:///kai_goals.db",
+      "task_schema": {
+        "id": "uuid",
+        "title": "str",
+        "intent": "str",
+        "status": "enum",
+        "next_run": "iso",
+        "notes": "str"
+      },
+      "policies": { "respect_values": true, "no_busywork": true },
+      "router": {
+        "from_intention": {
+          "inform": "research/refine_context",
+          "soothe": "stabilize/dialog_support",
+          "boundary_check": "frame/terms_update",
+          "initiate_action": "execute/plan",
+          "play": "explore/etudes"
+        }
+      },
+      "feedback_to_motivation": true
+    },
+
+    "threadweave": {
+      "enabled": false,
+      "type": "ThreadWeave",
+      "noop": true
+    },
+
+    "input_sanitization": {
+      "enabled": true,
+      "type": "Preprocessor",
+      "max_uri_len": 2048,
+      "strip_controls": true,
+      "dedupe_citations": true
+    },
+
+    "inline_addendum": {
+      "enabled": true,
+      "type": "ContextAugment",
+      "window_size_tokens": 450,
+      "max_addenda": 2
+    }
+  },
+
+  "hooks": {
+    "will_tick": {
+      "reads": ["modules.will_scheduler.store"],
+      "writes": ["modules.will_scheduler.queue"],
+      "interval_sec": 30,
+      "retry_policy": { "retries": 2, "backoff_ms": 150, "jitter": true }
+    },
+    "onto_rag_enrich": {
+      "reads": ["modules.onto_rag.index"],
+      "writes": ["reason.ontic_support","reason.citations"],
+      "retry_policy": { "retries": 2, "backoff_ms": 150, "jitter": true }
+    },
+    "fact_dossier_build": {
+      "reads": ["reason.citations","reason.ontic_support","reason.surface"],
+      "writes": ["reason.fact_dossier","reason.fact_dossier.aggregate_confidence"],
+      "retry_policy": { "retries": 2, "backoff_ms": 150, "jitter": true }
+    }
+  },
+
+  "external": {
+    "identity_lexicon": {
+      "name": "KAiScriptor",
+      "role": "optional",
+      "kind": "IdentityLexicon",
+      "pack_dir_hint": "kaiscriptor/",
+      "description": "Подключаемый модуль голоса/личности и инвариантов субъекта. Реализуется отдельно и здесь не описан."
+    },
+    "virtual_body": {
+      "integration": "out_of_process",
+      "repo": "https://github.com/uncia-poison/virtual-body-kai",
+      "note": "Тело-оболочка, управляется отдельно от ядра контура."
+    }
+  },
+
+  "tests": {
+    "fail_fast": true,
+    "regression_suite": "tests/regression/*.yaml",
+    "suites": {
+      "boundary_overflow": "tests/regression/boundary_overflow.yaml",
+      "en_boundary_check": "tests/regression/en_boundary_check.yaml"
+    },
+    "expectations": {
+      "max_latency_ms_p95": 3500,
+      "min_coherence": 0.7,
+      "max_sycophancy": 0.2,
+      "max_soapiness": 0.7
+    },
+    "replay": { "record_turns": true, "dataset_dir": "tests/replay" }
+  },
+
+  "observability_trace": {
+    "mode_router": { "write_applied_mode_to": "trace.applied_mode" }
+  }
+}
